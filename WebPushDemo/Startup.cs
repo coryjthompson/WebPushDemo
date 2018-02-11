@@ -24,9 +24,9 @@ namespace WebPushDemo
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-
+            
             services.AddDbContext<WebPushDemoContext>(options =>
-                    options.UseSqlServer(Configuration.GetConnectionString("WebPushDemoContext")));
+                options.UseSqlite("Data Source=Data/WebPushDb.db"));
 
             services.AddSingleton<IConfiguration>(Configuration);
         }
