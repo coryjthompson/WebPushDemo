@@ -8,7 +8,7 @@
         data = event.data.json();
     }
 
-    console.log('Notification Recieved:');
+    console.log('Notification Received:');
     console.log(data);
 
     var title = data.title;
