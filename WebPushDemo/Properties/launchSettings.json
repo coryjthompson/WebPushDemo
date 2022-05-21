@@ -19,8 +19,7 @@
       "launchUrl": "http://localhost:50302/",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "use64Bit": false
+      }
     }
   }
 }
