@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using WebPushDemo.Models;
+using Microsoft.Extensions.Hosting;
 
 namespace WebPushDemo
 {
@@ -32,7 +33,7 @@ namespace WebPushDemo
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -46,23 +47,25 @@ namespace WebPushDemo
 
             app.UseStaticFiles();
 
+            app.UseRouting();
+
             if (Configuration.GetSection("VapidKeys")["PublicKey"].Length == 0 || Configuration.GetSection("VapidKeys")["PrivateKey"].Length == 0)
             {
-                app.UseMvc(routes =>
+                app.UseEndpoints(endpoints =>
                 {
-                    routes.MapRoute(
+                    endpoints.MapControllerRoute(
                         name: "default",
-                        template: "{controller=WebPush}/{action=GenerateKeys}/{id?}");
+                        pattern: "{controller=WebPush}/{action=GenerateKeys}/{id?}");
                 });
 
                 return;
             }
 
-            app.UseMvc(routes =>
+            app.UseEndpoints(endpoints =>
             {
-                routes.MapRoute(
+                endpoints.MapControllerRoute(
                     name: "default",
-                    template: "{controller=Devices}/{action=Index}/{id?}");
+                    pattern: "{controller=Devices}/{action=Index}/{id?}");
             });
         }
     }
