@@ -9,25 +9,51 @@ $(document).ready(function () {
         return;
     }
 
+    $('#enablePushButton').on('click', function (e) {
+        e.preventDefault();
+        requestNotificationPermission();
+    });
+});
+
+function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+        errorHandler('[requestNotificationPermission] Notifications are not supported in this browser.');
+        return;
+    }
+
     Notification.requestPermission().then(function (status) {
         if (status === 'denied') {
             errorHandler('[Notification.requestPermission] Browser denied permissions to notification api.');
-        } else if (status === 'granted') {
-            console.log('[Notification.requestPermission] Initializing service worker.');
-            initialiseServiceWorker();
+            return;
         }
-    });
 
-    subscribe();
-});
+        if (status !== 'granted') {
+            errorHandler('[Notification.requestPermission] Notification permission was not granted.');
+            return;
+        }
+
+        console.log('[Notification.requestPermission] Initializing service worker.');
+        initialiseServiceWorker()
+            .then(function () {
+                return subscribe();
+            })
+            .catch(function (err) {
+                errorHandler('[requestNotificationPermission] Unable to initialize push registration.', err);
+            });
+    });
+}
 
 function initialiseServiceWorker() {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register(serviceWorker).then(handleSWRegistration);
+        return navigator.serviceWorker.register(serviceWorker).then(function (reg) {
+            handleSWRegistration(reg);
+            return reg;
+        });
     } else {
         errorHandler('[initialiseServiceWorker] Service workers are not supported in this browser.');
+        return Promise.reject(new Error('Service workers are not supported in this browser.'));
     }
-};
+}
 
 function handleSWRegistration(reg) {
     if (reg.installing) {
@@ -74,30 +100,43 @@ function initialiseState(reg) {
 }
 
 function subscribe() {
-    navigator.serviceWorker.ready.then(function (reg) {
-        var subscribeParams = { userVisibleOnly: true };
+    return navigator.serviceWorker.ready.then(function (reg) {
+        return reg.pushManager.getSubscription()
+            .then(function (existingSubscription) {
+                if (existingSubscription) {
+                    isSubscribed = true;
+                    populateSubscriptionFields(existingSubscription);
+                    return existingSubscription;
+                }
 
-        //Setting the public key of our VAPID key pair.
-        var applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
-        subscribeParams.applicationServerKey = applicationServerKey;
+                var subscribeParams = { userVisibleOnly: true };
 
-        reg.pushManager.subscribe(subscribeParams)
-            .then(function (subscription) {
-                isSubscribed = true;
+                // Setting the public key of our VAPID key pair.
+                subscribeParams.applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
 
-                var p256dh = base64Encode(subscription.getKey('p256dh'));
-                var auth = base64Encode(subscription.getKey('auth'));
-
-                console.log(subscription);
-
-                $('#PushEndpoint').val(subscription.endpoint);
-                $('#PushP256DH').val(p256dh);
-                $('#PushAuth').val(auth);
+                return reg.pushManager.subscribe(subscribeParams)
+                    .then(function (subscription) {
+                        isSubscribed = true;
+                        populateSubscriptionFields(subscription);
+                        return subscription;
+                    });
             })
             .catch(function (e) {
                 errorHandler('[subscribe] Unable to subscribe to push', e);
+                throw e;
             });
     });
+}
+
+function populateSubscriptionFields(subscription) {
+    var p256dh = base64Encode(subscription.getKey('p256dh'));
+    var auth = base64Encode(subscription.getKey('auth'));
+
+    console.log(subscription);
+
+    $('#PushEndpoint').val(subscription.endpoint);
+    $('#PushP256DH').val(p256dh);
+    $('#PushAuth').val(auth);
 }
 
 function errorHandler(message, e) {
@@ -112,7 +151,7 @@ function errorHandler(message, e) {
 function urlB64ToUint8Array(base64String) {
     var padding = '='.repeat((4 - base64String.length % 4) % 4);
     var base64 = (base64String + padding)
-        .replace(/\-/g, '+')
+        .replace(/-/g, '+')
         .replace(/_/g, '/');
 
     var rawData = window.atob(base64);

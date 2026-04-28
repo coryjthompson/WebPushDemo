@@ -76,7 +76,7 @@ namespace WebPushDemo.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var devices = await _context.Devices.SingleOrDefaultAsync(m => m.Id == id);
+            var devices = await _context.Devices.FirstOrDefaultAsync(m => m.Id == id);
             _context.Devices.Remove(devices);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));

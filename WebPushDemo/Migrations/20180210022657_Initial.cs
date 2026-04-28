@@ -13,8 +13,7 @@ namespace WebPushDemo.Migrations
                 name: "Devices",
                 columns: table => new
                 {
-                    Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                    Id = table.Column<int>(nullable: false),
                     Name = table.Column<string>(nullable: true),
                     PushAuth = table.Column<string>(nullable: true),
                     PushEndpoint = table.Column<string>(nullable: true),

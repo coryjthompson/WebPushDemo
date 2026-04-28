@@ -32,7 +32,7 @@ namespace WebPushDemo.Controllers
         public async Task<IActionResult> Send(int id)
         {
             var payload = Request.Form["payload"];
-            var device = await _context.Devices.SingleOrDefaultAsync(m => m.Id == id);
+            var device = await _context.Devices.FirstOrDefaultAsync(m => m.Id == id);
 
             string vapidPublicKey = _configuration.GetSection("VapidKeys")["PublicKey"];
             string vapidPrivateKey = _configuration.GetSection("VapidKeys")["PrivateKey"];

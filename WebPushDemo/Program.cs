@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using WebPushDemo.Models;
 
 namespace WebPushDemo
 {
@@ -14,12 +11,52 @@ namespace WebPushDemo
     {
         public static void Main(string[] args)
         {
-            BuildWebHost(args).Run();
-        }
+            var builder = WebApplication.CreateBuilder(args);
 
-        public static IWebHost BuildWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>()
-                .Build();
+            // Add services to the container
+            builder.Services.AddControllersWithViews();
+            builder.Services.AddRazorPages()
+                .AddRazorRuntimeCompilation();
+            builder.Services.AddDbContext<WebPushDemoContext>(options =>
+                options.UseSqlite("Data Source=Data/WebPushDb.db"));
+            builder.Services.AddSingleton(builder.Configuration);
+
+            var app = builder.Build();
+
+            // Configure the HTTP request pipeline
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Home/Error");
+            }
+
+            app.UseStaticFiles();
+            app.UseRouting();
+
+            // Check if Vapid keys are configured
+            var config = app.Services.GetRequiredService<IConfiguration>();
+            var publicKey = config.GetSection("VapidKeys")["PublicKey"] ?? "";
+            var privateKey = config.GetSection("VapidKeys")["PrivateKey"] ?? "";
+
+            if (string.IsNullOrEmpty(publicKey) || string.IsNullOrEmpty(privateKey))
+            {
+                // Route to generate keys if not configured
+                app.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=WebPush}/{action=GenerateKeys}/{id?}");
+            }
+            else
+            {
+                // Normal routing to devices
+                app.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Devices}/{action=Index}/{id?}");
+            }
+
+            app.Run();
+        }
     }
 }

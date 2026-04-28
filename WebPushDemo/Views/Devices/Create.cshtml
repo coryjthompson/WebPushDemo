@@ -34,7 +34,10 @@
             </div>
             <div class="well" style="width: 500px;">
                 <h4>Web Push Details</h4>
-                <span style="font-size: 12px;">These values will automatically become populated once correct permissions are given by the browser.</span>
+                <span style="font-size: 12px;">Click Enable Notifications first, then these values will be populated after permissions are granted.</span>
+                <div style="margin-top: 10px;">
+                    <button type="button" id="enablePushButton" class="btn btn-default btn-sm">Enable Notifications</button>
+                </div>
                 <hr/>
                 <div class="form-group">
                     <label asp-for="PushEndpoint" class="control-label"></label>
